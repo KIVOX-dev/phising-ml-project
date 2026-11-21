@@ -13,5 +13,5 @@ Dockerfile
 .dockerignore
 dataset/*.bak
 models/v*.pkl
-render.yaml
+deployment.yaml
 .github
