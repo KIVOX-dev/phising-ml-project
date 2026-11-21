@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phishing Domain Checker</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f4f7; margin: 0; padding: 40px 16px; color: #222; }
+    .box { max-width: 480px; margin: 0 auto; background: #fff; padding: 28px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+    h1 { font-size: 22px; margin: 0 0 6px; }
+    p { color: #666; margin: 0 0 20px; font-size: 14px; }
+    input { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+    button { width: 100%; margin-top: 12px; padding: 10px; font-size: 16px; background: #2563eb; color: #fff; border: 0; border-radius: 6px; cursor: pointer; }
+    button:disabled { background: #93a8d8; cursor: default; }
+    #result { margin-top: 20px; padding: 14px; border-radius: 6px; display: none; font-size: 16px; }
+    .fake { background: #fde8e8; color: #b42318; }
+    .genuine { background: #e6f6ec; color: #166534; }
+    .error { background: #fff4e5; color: #92400e; }
+    a { font-size: 13px; color: #2563eb; display: inline-block; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Phishing Domain Checker</h1>
+    <p>Type a domain or link to see if it looks fake or genuine.</p>
+    <input id="domain" placeholder="e.g. paypal-login-secure.xyz" autofocus>
+    <button id="btn">Check</button>
+    <div id="result"></div>
+    <a href="/docs">API docs</a>
+  </div>
+
+  <script>
+    const input = document.getElementById("domain");
+    const btn = document.getElementById("btn");
+    const box = document.getElementById("result");
+
+    function show(text, cls) {
+      box.textContent = text;
+      box.className = cls;
+      box.style.display = "block";
+    }
+
+    async function check() {
+      const value = input.value.trim();
+      if (value.length < 3) { show("Please type a domain first.", "error"); return; }
+      btn.disabled = true;
+      btn.textContent = "Checking...";
+      try {
+        const res = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: value })
+        });
+        const data = await res.json();
+        if (!res.ok) { show("Error: " + (typeof data.detail === "string" ? data.detail : "invalid input"), "error"); return; }
+        const percent = Math.round(data.fake_probability * 100);
+        if (data.result === "Fake") show("FAKE - " + percent + "% chance this is phishing", "fake");
+        else show("GENUINE - only " + percent + "% chance this is phishing", "genuine");
+      } catch (e) {
+        show("Could not reach the server.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Check";
+      }
+    }
+
+    btn.addEventListener("click", check);
+    input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+  </script>
+</body>
+</html>

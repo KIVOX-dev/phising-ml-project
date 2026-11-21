@@ -51,6 +51,7 @@ def train(runs=RUNS):
             mlflow.log_metric("recall", rec)
             mlflow.log_metric("f1", f1)
             mlflow.sklearn.log_model(model, name=f"v{i}", serialization_format="cloudpickle")
+            joblib.dump(model, f"models/v{i}.pkl")  # keep every version, like the MLflow runs
 
         print(f"train={train_size}  trees={n_estimators}  accuracy={acc * 100:.2f}%  "
               f"precision={prec:.3f}  recall={rec:.3f}  f1={f1:.3f}")
@@ -58,6 +59,7 @@ def train(runs=RUNS):
                         "accuracy": round(acc, 4), "precision": round(prec, 4),
                         "recall": round(rec, 4), "f1": round(f1, 4)})
 
+        # models/model.pkl is the best one and is what the API loads.
         # phishing detection cares about catching phishing, so the best model is picked by F1
         if f1 > best_f1:
             best_f1 = f1

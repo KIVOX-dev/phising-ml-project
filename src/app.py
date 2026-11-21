@@ -3,7 +3,7 @@ from typing import Literal
 import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from src.ML_TRACKING import train
@@ -26,7 +26,7 @@ class Prediction(BaseModel):
 
 @app.get("/", include_in_schema=False)
 def home():
-    return RedirectResponse("/docs")  # Swagger UI
+    return FileResponse("src/index.html")  # simple web page; the API docs are at /docs
 
 
 @app.post("/predict", summary="Is this domain fake (phishing) or genuine?", response_model=Prediction)
