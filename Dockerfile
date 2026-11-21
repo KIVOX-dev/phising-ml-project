@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ src/
 COPY dataset/phishing_domains_1000.csv dataset/
 COPY models/model.pkl models/
+COPY models/model_info.json models/
 
 # run as a normal user, not root; /app must be writable for MLflow when /train is called
 RUN useradd --create-home appuser && chown -R appuser /app

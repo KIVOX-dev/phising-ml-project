@@ -1,3 +1,4 @@
+import json
 from typing import Literal
 
 import joblib
@@ -27,6 +28,24 @@ class Prediction(BaseModel):
 @app.get("/", include_in_schema=False)
 def home():
     return FileResponse("src/index.html")  # simple web page; the API docs are at /docs
+
+
+@app.get("/stats", summary="Numbers for the dashboard")
+def stats():
+    try:
+        model = joblib.load("models/model.pkl")
+        info = json.load(open("models/model_info.json"))
+        data = pd.read_csv("dataset/phishing_domains_1000.csv")
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Stats not available: {e}")
+    top = sorted(zip(FEATURES, model.feature_importances_), key=lambda p: -p[1])[:6]
+    return {
+        "model": info,
+        "domains": len(data),
+        "fake": int((data["label"] == 1).sum()),
+        "genuine": int((data["label"] == 0).sum()),
+        "top_features": [{"name": n, "importance": round(float(v), 4)} for n, v in top],
+    }
 
 
 @app.post("/predict", summary="Is this domain fake (phishing) or genuine?", response_model=Prediction)

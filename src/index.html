@@ -3,48 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Phishing Domain Checker</title>
+  <title>Phishing Domain Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f2f4f7; margin: 0; padding: 40px 16px; color: #222; }
-    .box { max-width: 480px; margin: 0 auto; background: #fff; padding: 28px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
-    h1 { font-size: 22px; margin: 0 0 6px; }
-    p { color: #666; margin: 0 0 20px; font-size: 14px; }
-    input { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
-    button { width: 100%; margin-top: 12px; padding: 10px; font-size: 16px; background: #2563eb; color: #fff; border: 0; border-radius: 6px; cursor: pointer; }
-    button:disabled { background: #93a8d8; cursor: default; }
-    #result { margin-top: 20px; padding: 14px; border-radius: 6px; display: none; font-size: 16px; }
-    .fake { background: #fde8e8; color: #b42318; }
-    .genuine { background: #e6f6ec; color: #166534; }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f2f4f7; margin: 0; color: #222; }
+    header { background: #1e293b; color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 20px; margin: 0; }
+    header a { color: #93c5fd; font-size: 14px; text-decoration: none; margin-left: 16px; }
+    main { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .card, .panel { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+    .card { padding: 16px; }
+    .card .label { font-size: 13px; color: #666; }
+    .card .value { font-size: 26px; font-weight: bold; margin-top: 4px; }
+    .card .sub { font-size: 12px; color: #888; margin-top: 2px; }
+    .grid { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; }
+    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+    .panel { padding: 20px; margin-bottom: 14px; }
+    .panel h2 { font-size: 16px; margin: 0 0 12px; }
+    input { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; }
+    button.main { width: 100%; margin-top: 10px; padding: 10px; font-size: 16px; background: #2563eb; color: #fff; border: 0; border-radius: 6px; cursor: pointer; }
+    button.main:disabled { background: #93a8d8; cursor: default; }
+    .examples { margin-top: 10px; font-size: 13px; color: #666; }
+    .examples button { background: #eef2f7; border: 0; border-radius: 12px; padding: 4px 10px; margin: 4px 4px 0 0; cursor: pointer; font-size: 12px; }
+    #result { margin-top: 16px; padding: 14px; border-radius: 6px; display: none; }
+    #result .big { font-size: 20px; font-weight: bold; }
+    .bar { height: 10px; background: rgba(0,0,0,.1); border-radius: 5px; margin-top: 10px; overflow: hidden; }
+    .bar div { height: 100%; }
+    .fake { background: #fde8e8; color: #b42318; } .fake .bar div { background: #dc2626; }
+    .genuine { background: #e6f6ec; color: #166534; } .genuine .bar div { background: #16a34a; }
     .error { background: #fff4e5; color: #92400e; }
-    a { font-size: 13px; color: #2563eb; display: inline-block; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    td, th { text-align: left; padding: 6px 4px; border-bottom: 1px solid #eee; }
+    th { color: #666; font-weight: normal; font-size: 12px; }
+    .tag { padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+    .tag.fake { background: #fde8e8; } .tag.genuine { background: #e6f6ec; }
+    .feat { margin-bottom: 10px; font-size: 13px; }
+    .feat .track { height: 8px; background: #e5e7eb; border-radius: 4px; margin-top: 4px; }
+    .feat .track div { height: 100%; background: #2563eb; border-radius: 4px; }
+    .empty { color: #999; font-size: 14px; }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>Phishing Domain Checker</h1>
-    <p>Type a domain or link to see if it looks fake or genuine.</p>
-    <input id="domain" placeholder="e.g. paypal-login-secure.xyz" autofocus>
-    <button id="btn">Check</button>
-    <div id="result"></div>
-    <a href="/docs">API docs</a>
-  </div>
+  <header>
+    <h1>Phishing Domain Dashboard</h1>
+    <div><a href="/docs">API docs</a></div>
+  </header>
+
+  <main>
+    <div class="cards">
+      <div class="card"><div class="label">Model accuracy</div><div class="value" id="acc">-</div><div class="sub" id="accSub">&nbsp;</div></div>
+      <div class="card"><div class="label">F1 score</div><div class="value" id="f1">-</div><div class="sub">on the test split</div></div>
+      <div class="card"><div class="label">Training domains</div><div class="value" id="dom">-</div><div class="sub" id="domSub">&nbsp;</div></div>
+      <div class="card"><div class="label">Checked this session</div><div class="value" id="count">0</div><div class="sub" id="countSub">no checks yet</div></div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="panel">
+          <h2>Check a domain</h2>
+          <input id="domain" placeholder="e.g. paypal-login-secure.xyz" autofocus>
+          <button class="main" id="btn">Check</button>
+          <div class="examples">Try:
+            <button>google.com</button><button>paypal-login-secure.xyz</button><button>sp0tify.tk</button><button>accounts.spotify.com</button>
+          </div>
+          <div id="result"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Recent checks</h2>
+          <div id="history" class="empty">Nothing checked yet.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <h2>What the model looks at most</h2>
+          <div id="features" class="empty">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </main>
 
   <script>
-    const input = document.getElementById("domain");
-    const btn = document.getElementById("btn");
-    const box = document.getElementById("result");
+    const $ = id => document.getElementById(id);
+    const history = [];
+    const names = {
+      length: "Domain length", num_dots: "Number of dots", num_hyphens: "Number of hyphens",
+      num_digits: "Number of digits", subdomain_count: "Subdomains", suspicious_tld: "Suspicious ending",
+      sld_length: "Main name length", has_brand: "Contains a brand", has_suspicious_word: "Contains words like login",
+      digit_ratio: "Share of digits", vowel_ratio: "Share of vowels", entropy: "Randomness of letters"
+    };
 
-    function show(text, cls) {
-      box.textContent = text;
+    function pct(x) { return (x * 100).toFixed(1) + "%"; }
+
+    async function loadStats() {
+      try {
+        const s = await (await fetch("/stats")).json();
+        $("acc").textContent = pct(s.model.accuracy);
+        $("accSub").textContent = "model " + s.model.version + ", " + s.model.n_estimators + " trees";
+        $("f1").textContent = s.model.f1.toFixed(3);
+        $("dom").textContent = s.domains;
+        $("domSub").textContent = s.fake + " fake / " + s.genuine + " genuine";
+        const max = s.top_features[0].importance;
+        $("features").className = "";
+        $("features").innerHTML = s.top_features.map(f =>
+          '<div class="feat">' + (names[f.name] || f.name) + ' <span style="float:right">' + pct(f.importance) +
+          '</span><div class="track"><div style="width:' + (f.importance / max * 100) + '%"></div></div></div>').join("");
+      } catch (e) {
+        $("features").textContent = "Stats not available.";
+      }
+    }
+
+    function show(html, cls) {
+      const box = $("result");
+      box.innerHTML = html;
       box.className = cls;
       box.style.display = "block";
     }
 
+    function renderHistory() {
+      $("count").textContent = history.length;
+      const fakes = history.filter(h => h.result === "Fake").length;
+      $("countSub").textContent = fakes + " fake, " + (history.length - fakes) + " genuine";
+      $("history").className = "";
+      $("history").innerHTML = "<table><tr><th>Domain</th><th>Result</th><th>Fake chance</th></tr>" +
+        history.slice(0, 8).map(h => "<tr><td></td><td><span class='tag " + h.result.toLowerCase() + "'>" + h.result +
+          "</span></td><td>" + pct(h.p) + "</td></tr>").join("") + "</table>";
+      // domain text is added as text, not HTML, so odd input cannot break the page
+      const cells = $("history").querySelectorAll("tr:not(:first-child) td:first-child");
+      history.slice(0, 8).forEach((h, i) => { cells[i].textContent = h.domain; });
+    }
+
     async function check() {
-      const value = input.value.trim();
+      const value = $("domain").value.trim();
       if (value.length < 3) { show("Please type a domain first.", "error"); return; }
-      btn.disabled = true;
-      btn.textContent = "Checking...";
+      $("btn").disabled = true;
+      $("btn").textContent = "Checking...";
       try {
         const res = await fetch("/predict", {
           method: "POST",
@@ -53,19 +148,25 @@
         });
         const data = await res.json();
         if (!res.ok) { show("Error: " + (typeof data.detail === "string" ? data.detail : "invalid input"), "error"); return; }
-        const percent = Math.round(data.fake_probability * 100);
-        if (data.result === "Fake") show("FAKE - " + percent + "% chance this is phishing", "fake");
-        else show("GENUINE - only " + percent + "% chance this is phishing", "genuine");
+        const p = data.fake_probability;
+        const fake = data.result === "Fake";
+        show('<div class="big">' + (fake ? "FAKE" : "GENUINE") + '</div>' + pct(p) + ' chance this is phishing' +
+             '<div class="bar"><div style="width:' + (p * 100) + '%"></div></div>', fake ? "fake" : "genuine");
+        history.unshift({ domain: value, result: data.result, p: p });
+        renderHistory();
       } catch (e) {
         show("Could not reach the server.", "error");
       } finally {
-        btn.disabled = false;
-        btn.textContent = "Check";
+        $("btn").disabled = false;
+        $("btn").textContent = "Check";
       }
     }
 
-    btn.addEventListener("click", check);
-    input.addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+    $("btn").addEventListener("click", check);
+    $("domain").addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+    document.querySelectorAll(".examples button").forEach(b =>
+      b.addEventListener("click", () => { $("domain").value = b.textContent; check(); }));
+    loadStats();
   </script>
 </body>
 </html>

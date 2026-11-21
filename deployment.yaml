@@ -17,6 +17,7 @@ services:
       paths:
         - src/**
         - models/model.pkl
+        - models/model_info.json
         - dataset/phishing_domains_1000.csv
         - requirements.txt
         - Dockerfile

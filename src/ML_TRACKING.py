@@ -1,6 +1,7 @@
 import pandas as pd
 import mlflow
 import mlflow.sklearn
+import json
 import joblib
 
 from sklearn.model_selection import train_test_split
@@ -64,6 +65,8 @@ def train(runs=RUNS):
         if f1 > best_f1:
             best_f1 = f1
             joblib.dump(model, "models/model.pkl")
+            with open("models/model_info.json", "w") as f:  # shown on the dashboard
+                json.dump(results[-1], f, indent=2)
 
     return results
 
